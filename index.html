@@ -51,6 +51,30 @@
         from { transform: scale(1); }
         to { transform: scale(1.1); }
       }
+       @keyframes pulse-dot {
+        0%, 100% {
+          transform: scale(0.8);
+          opacity: 0.5;
+        }
+        50% {
+          transform: scale(1.2);
+          opacity: 1;
+        }
+      }
+      .loading-spinner {
+        display: flex;
+        gap: 0.5rem;
+      }
+      .loading-spinner > div {
+        width: 1rem;
+        height: 1rem;
+        background-color: #9370DB;
+        border-radius: 50%;
+        animation: pulse-dot 1.4s infinite ease-in-out both;
+      }
+      .loading-spinner > div:nth-child(1) { animation-delay: -0.32s; }
+      .loading-spinner > div:nth-child(2) { animation-delay: -0.16s; }
+
       .glass-card {
         background: rgba(12, 5, 19, 0.5);
         backdrop-filter: blur(12px);
