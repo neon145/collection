@@ -1,9 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Mineral, Rarity, HomePageLayout, LayoutHistoryEntry, IdentifyImageData } from '../types.ts';
+import { Mineral, HomePageLayout, LayoutHistoryEntry, IdentifyImageData } from '../types.ts';
 import { CURATOR_PASSWORD, RARITY_LEVELS } from '../constants.ts';
 import { generateDescription, suggestRarity, generateHomepageLayout, identifySpecimen, removeImageBackground, cleanImage, clarifyImage, LayoutGenerationResponse } from '../services/geminiService.ts';
 import Modal from './Modal.tsx';
-import { ChatBubbleIcon, SparklesIcon, TrashIcon, WandIcon, PhotoIcon, HistoryIcon, DocumentTextIcon, BroomIcon, ViewfinderIcon } from './icons.tsx';
+import { ChatBubbleIcon, SparklesIcon, TrashIcon, WandIcon, PhotoIcon, DocumentTextIcon, BroomIcon, ViewfinderIcon } from './icons.tsx';
 
 // --- Helper Functions ---
 const fileToDataUrl = (file: File): Promise<{dataUrl: string, base64: string, mimeType: string}> => {
@@ -356,7 +356,6 @@ export const IdentifyWithAIChatModal: React.FC<IdentifyWithAIChatModalProps> = (
         if (!text.trim() || isLoading || !imageData) return;
 
         const userMessage: AIChatMessage = { sender: 'user', text: text };
-        // FIX: The `role` property was being inferred as type `string`, which is not assignable to the more specific `'user' | 'model'` type expected by `identifySpecimen`. By explicitly defining the `role` variable with the correct type, we ensure type compatibility.
         const currentChatHistory = messages
             .filter(m => m.sender === 'user' || m.sender === 'ai')
             .map(m => {
@@ -394,7 +393,7 @@ export const IdentifyWithAIChatModal: React.FC<IdentifyWithAIChatModalProps> = (
                 const response = await identifySpecimen(imageData.base64, imageData.mimeType);
                 setIsLoading(false);
                 const aiMessage: AIChatMessage = { sender: 'ai', text: response.text, suggestedNames: response.names };
-                setMessages(prev => [aiMessage]);
+                setMessages([aiMessage]);
             };
             runInitialIdentification();
         }
@@ -589,7 +588,7 @@ export const CustomizeUIModal: React.FC<CustomizeUIModalProps> = ({ isOpen, onCl
                 {view === 'history' && (
                     <div className="flex-grow overflow-y-auto pr-2 space-y-3">
                         {layoutHistory.length > 0 ? (
-                            [...layoutHistory].sort((a,b) => b.timestamp - a.timestamp).map((entry, index) => (
+                            [...layoutHistory].sort((a,b) => b.timestamp - a.timestamp).map((entry) => (
                                 <div key={entry.timestamp} className="bg-white/5 p-3 rounded-lg flex items-center gap-4">
                                     <DocumentTextIcon className="w-6 h-6 text-gray-500 flex-shrink-0"/>
                                     <div className="flex-grow">

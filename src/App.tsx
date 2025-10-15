@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Mineral, HomePageLayout, LayoutHistoryEntry, Rarity, AppData, IdentifyImageData, HomeComponent } from './types.ts';
 import { RARITY_LEVELS } from './constants.ts';
 import { PlusIcon, EditIcon, WandIcon, MenuIcon, CloseIcon, TrashIcon } from './components/icons.tsx';
