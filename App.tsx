@@ -1,23 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { initializeApp } from 'firebase/app';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
-import { firebaseConfig } from './firebaseConfig.ts';
 import { Mineral, HomePageLayout, LayoutHistoryEntry, Rarity, AppData } from './types.ts';
-import { INITIAL_APP_DATA } from './data.ts';
 import { RARITY_LEVELS } from './constants.ts';
 import { PlusIcon, EditIcon, WandIcon, ArrowLeftIcon, ArrowRightIcon, MenuIcon, CloseIcon, TrashIcon } from './components/icons.tsx';
 import { CuratorLoginModal, AddEditMineralModal, IdentifyWithAIChatModal, CustomizeUIModal } from './components/CuratorTools.tsx';
 import Modal from './components/Modal.tsx';
 
-// --- FIREBASE INITIALIZATION ---
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
-const dataDocRef = doc(db, "collectionData", "main");
-
-
 const App = () => {
     // --- STATE MANAGEMENT ---
-    const [appData, setAppData] = useState<AppData>(INITIAL_APP_DATA);
+    const [appData, setAppData] = useState<AppData>({ minerals: [], homePageLayout: [], layoutHistory: [] });
     const [isLoading, setIsLoading] = useState(true);
 
     const [isCurator, setIsCurator] = useState(false);
@@ -39,30 +29,21 @@ const App = () => {
 
     // --- DATA PERSISTENCE ---
     const debounceTimeoutRef = useRef<number | null>(null);
+    const isInitialMount = useRef(true);
     
-    // Load data from Firestore on initial mount
+    // Load data from the server on initial mount
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const docSnap = await getDoc(dataDocRef);
-
-                if (docSnap.exists()) {
-                    const data = docSnap.data() as AppData;
-                    if (data.minerals && data.homePageLayout) {
-                        setAppData(data);
-                    } else {
-                        // Data is malformed, re-initialize with default data
-                        await setDoc(dataDocRef, INITIAL_APP_DATA);
-                        setAppData(INITIAL_APP_DATA);
-                    }
-                } else {
-                    // No data found, create the document with initial data
-                    await setDoc(dataDocRef, INITIAL_APP_DATA);
+                const response = await fetch('/api/data');
+                if (!response.ok) {
+                    throw new Error(`Server responded with status: ${response.status}`);
                 }
+                const data = await response.json();
+                setAppData(data);
             } catch (error) {
-                console.error("Error fetching data from Firestore:", error);
-                // Fallback to initial data if there's an error
-                setAppData(INITIAL_APP_DATA);
+                console.error("Error fetching data from server:", error);
+                // You could set an error state here to show a message to the user
             } finally {
                 setIsLoading(false);
             }
@@ -71,21 +52,29 @@ const App = () => {
         fetchData();
     }, []);
 
-    // Save data to Firestore whenever appData changes (with debounce)
+    // Save data to server whenever appData changes (with debounce)
     useEffect(() => {
-        if (isLoading) return; // Don't save during initial load
+        // Don't save on the initial render when appData is first populated from the server
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
 
         if (debounceTimeoutRef.current) {
             clearTimeout(debounceTimeoutRef.current);
         }
         debounceTimeoutRef.current = window.setTimeout(async () => {
             try {
-                await setDoc(dataDocRef, appData);
+                await fetch('/api/data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(appData)
+                });
             } catch (err) {
-                console.error("Failed to save data to Firestore:", err);
+                console.error("Failed to save data to server:", err);
             }
         }, 1000);
-    }, [appData, isLoading]);
+    }, [appData]);
     
     // Derived state
     const allMineralTypes = useMemo(() => [...new Set(appData.minerals.map(m => m.type))].sort(), [appData]);
