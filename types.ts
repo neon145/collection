@@ -11,6 +11,11 @@ export interface Mineral {
   onDisplay: boolean;
 }
 
+export interface IdentifyImageData {
+  base64: string;
+  mimeType: string;
+}
+
 // Types for AI-powered Homepage Customization
 export type HomeComponentType = 'hero' | 'grid-2' | 'grid-3' | 'list';
 

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Mineral, Rarity, HomePageLayout, LayoutHistoryEntry } from '../types.ts';
+import { Mineral, Rarity, HomePageLayout, LayoutHistoryEntry, IdentifyImageData } from '../types.ts';
 import { CURATOR_PASSWORD, RARITY_LEVELS } from '../constants.ts';
 import { generateDescription, suggestRarity, generateHomepageLayout, identifySpecimen, removeImageBackground, cleanImage, clarifyImage, LayoutGenerationResponse } from '../services/geminiService.ts';
 import Modal from './Modal.tsx';
@@ -85,7 +85,7 @@ interface AddEditMineralModalProps {
     onSave: (mineral: Mineral) => void;
     mineralToEdit: Mineral | null;
     allMineralTypes: string[];
-    onOpenIdentifyChat: (imageData: { base64: string; mimeType: string; }) => void;
+    onOpenIdentifyChat: (imageData: IdentifyImageData) => void;
     identifiedNameFromAI: string | null;
     onResetIdentifiedName: () => void;
 }
@@ -335,7 +335,7 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
 interface IdentifyWithAIChatModalProps {
     isOpen: boolean;
     onClose: () => void;
-    imageData: { base64: string; mimeType: string; } | null;
+    imageData: IdentifyImageData | null;
     onNameSelect: (name: string) => void;
 }
 

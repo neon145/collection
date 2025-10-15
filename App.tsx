@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Mineral, HomePageLayout, LayoutHistoryEntry, Rarity, AppData } from './types.ts';
+import { Mineral, HomePageLayout, LayoutHistoryEntry, Rarity, AppData, IdentifyImageData } from './types.ts';
 import { RARITY_LEVELS } from './constants.ts';
 import { PlusIcon, EditIcon, WandIcon, ArrowLeftIcon, ArrowRightIcon, MenuIcon, CloseIcon, TrashIcon } from './components/icons.tsx';
 import { CuratorLoginModal, AddEditMineralModal, IdentifyWithAIChatModal, CustomizeUIModal } from './components/CuratorTools.tsx';
@@ -24,7 +24,7 @@ const App = () => {
     // Data for modals
     const [mineralToEdit, setMineralToEdit] = useState<Mineral | null>(null);
     const [selectedMineral, setSelectedMineral] = useState<Mineral | null>(null);
-    const [identifyImageData, setIdentifyImageData] = useState<{ base64: string; mimeType: string; } | null>(null);
+    const [identifyImageData, setIdentifyImageData] = useState<IdentifyImageData | null>(null);
     const [identifiedNameFromAI, setIdentifiedNameFromAI] = useState<string | null>(null);
 
     // --- DATA PERSISTENCE ---
@@ -148,7 +148,7 @@ const App = () => {
         setDetailModalOpen(true);
     };
     
-    const openIdentifyChat = (imageData: { base64: string; mimeType: string; }) => {
+    const openIdentifyChat = (imageData: IdentifyImageData) => {
         setIdentifyImageData(imageData);
         setIdentifyChatModalOpen(true);
     };
