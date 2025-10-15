@@ -9,13 +9,10 @@ const PORT = process.env.PORT || 3000;
 const DB_PATH = path.join(__dirname, 'db.json');
 
 // --- Middleware ---
-// Enable Cross-Origin Resource Sharing
 app.use(cors()); 
-// Parse JSON bodies, increase limit to handle base64 images
 app.use(bodyParser.json({ limit: '50mb' })); 
 
-// **FIX:** Explicitly set the correct MIME type for .tsx and .ts files.
-// The browser enforces strict MIME type checking for modules, and Babel needs to fetch these.
+// Set the correct MIME type for .tsx and .ts files so in-browser Babel can fetch them.
 app.use((req, res, next) => {
   if (req.path.endsWith('.tsx') || req.path.endsWith('.ts')) {
     res.type('application/javascript; charset=UTF-8');
@@ -23,12 +20,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static files (HTML, CSS, TSX) from the root directory
-app.use(express.static(path.join(__dirname, '')));
+// --- API Endpoints (Define BEFORE static files) ---
+// This ensures that API calls are never mistaken for file requests.
 
-// --- API Endpoints ---
-
-// GET /api/data: Reads the db.json file and sends the collection data to the client.
+// GET /api/data: Reads the db.json file and sends the collection data.
 app.get('/api/data', (req, res) => {
     fs.readFile(DB_PATH, 'utf8', (err, data) => {
         if (err) {
@@ -39,7 +34,7 @@ app.get('/api/data', (req, res) => {
     });
 });
 
-// POST /api/data: Receives collection data from the client and writes it to the db.json file.
+// POST /api/data: Receives collection data and writes it to db.json.
 app.post('/api/data', (req, res) => {
     const newData = req.body;
     fs.writeFile(DB_PATH, JSON.stringify(newData, null, 2), 'utf8', (err) => {
@@ -50,10 +45,15 @@ app.post('/api/data', (req, res) => {
         res.status(200).send('Data saved successfully.');
     });
 });
-    
-// --- Fallback ---
+
+// --- Static File Serving ---
+// Serve static files (HTML, CSS, TSX) from the root directory.
+// This comes AFTER the API routes.
+app.use(express.static(path.join(__dirname, '')));
+
+// --- Fallback Route (Define LAST) ---
 // For any route not matched above, serve the main index.html file.
-// This is crucial for a single-page application (SPA) to handle routing correctly.
+// This is crucial for a single-page application (SPA) to handle client-side routing.
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
