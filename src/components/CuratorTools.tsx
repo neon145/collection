@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Mineral, HomePageLayout, LayoutHistoryEntry, IdentifyImageData, ChatContent } from '../types.ts';
 import { CURATOR_PASSWORD, RARITY_LEVELS } from '../constants.ts';
 import { generateDescription, suggestRarity, generateHomepageLayout, identifySpecimen, removeImageBackground, cleanImage, clarifyImage, LayoutGenerationResponse } from '../services/geminiService.ts';

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Mineral } from '../types.ts';
 import { EditIcon, TrashIcon } from './icons.tsx';
 

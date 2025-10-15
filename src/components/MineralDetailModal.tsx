@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Mineral } from '../types.ts';
 import Modal from './Modal.tsx';
 import { ArrowLeftIcon, ArrowRightIcon } from './icons.tsx';
