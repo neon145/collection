@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Collection by Arjun Joshi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend+Mega:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Lexend Mega', sans-serif;
+        background-color: #050408;
+      }
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        background: radial-gradient(circle at 20% 20%, rgba(147, 112, 219, 0.08), transparent 40%),
+                    radial-gradient(circle at 80% 70%, rgba(75, 0, 130, 0.08), transparent 40%);
+        z-index: -1;
+        pointer-events: none;
+        animation: subtlePulse 15s ease-in-out infinite alternate;
+      }
+      strong, b {
+        font-weight: 600;
+      }
+      @keyframes subtlePulse {
+        from { opacity: 0.7; }
+        to { opacity: 1; }
+      }
+      .animate-fade-in {
+        animation: fadeIn 0.5s ease-in-out;
+      }
+      .animate-modal-pop-in {
+        animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes popIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      @keyframes slowZoomIn {
+        from { transform: scale(1); }
+        to { transform: scale(1.1); }
+      }
+      .glass-card {
+        background: rgba(12, 5, 19, 0.5);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .modal-glass {
+        background: rgba(18, 18, 22, 0.6);
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      }
+      .subtle-glow {
+        box-shadow: 0 0 20px rgba(147, 112, 219, 0.1);
+      }
+      .text-shadow-strong {
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+      }
+      
+      /* Restored Glass Button Styles */
+      .glass-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.6rem 1.2rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        color: white;
+        text-transform: uppercase;
+        transform: translateY(0);
+      }
+      .glass-button:not(:disabled):hover {
+        transform: translateY(-2px) scale(1.02);
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      }
+      .glass-button:not(:disabled):active {
+        transform: translateY(0px);
+        background: rgba(255, 255, 255, 0.05);
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+      }
+      .glass-button-purple {
+        background: rgba(147, 112, 219, 0.2);
+        border-color: rgba(147, 112, 219, 0.4);
+      }
+      .glass-button-purple:not(:disabled):hover {
+        background: rgba(147, 112, 219, 0.3);
+        box-shadow: 0 4px 12px rgba(147, 112, 219, 0.2);
+      }
+      .glass-button-green {
+        background: rgba(16, 185, 129, 0.2);
+        border-color: rgba(16, 185, 129, 0.4);
+      }
+       .glass-button-green:not(:disabled):hover {
+        background: rgba(16, 185, 129, 0.3);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+      }
+      .glass-button-small {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.75rem;
+      }
+      .layers-icon {
+        position: relative;
+        width: 1.25rem;
+        height: 1.25rem;
+        flex-shrink: 0;
+      }
+      .layers-icon::before, .layers-icon::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 3px;
+        border: 1.5px solid white;
+        background-color: rgba(0,0,0,0.3);
+      }
+      .layers-icon::before {
+        transform: rotate(-10deg);
+      }
+      .layers-icon::after {
+        transform: rotate(10deg);
+      }
+    </style>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.23.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.4.0/"
+  }
+}
+</script>
+</head>
+  <body class="text-white">
+    <div id="root"></div>
+    <script type="text/babel" data-type="module" src="/index.tsx"></script>
+  </body>
+</html>
