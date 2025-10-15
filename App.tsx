@@ -1,88 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Mineral, HomePageLayout, LayoutHistoryEntry, Rarity, AppData, IdentifyImageData, HomeComponent } from './types.ts';
 import { RARITY_LEVELS } from './constants.ts';
-import { PlusIcon, EditIcon, WandIcon, ArrowLeftIcon, ArrowRightIcon, MenuIcon, CloseIcon, TrashIcon } from './components/icons.tsx';
+import { PlusIcon, EditIcon, WandIcon, MenuIcon, CloseIcon, TrashIcon } from './components/icons.tsx';
 import { CuratorLoginModal, AddEditMineralModal, IdentifyWithAIChatModal, CustomizeUIModal } from './components/CuratorTools.tsx';
-import Modal from './components/Modal.tsx';
+import MineralCard from './components/MineralCard.tsx';
+import MineralDetailModal from './components/MineralDetailModal.tsx';
 
-// --- TYPE DEFINITIONS for Components ---
-// By defining prop types explicitly, we fix the "Unexpected token" error
-// caused by in-browser Babel struggling with complex inline types.
-
-type MineralCardProps = {
-  mineral: Mineral;
-  isCurator: boolean;
-  onSelect: (mineral: Mineral) => void;
-  onEdit: (mineral: Mineral) => void;
-  onDelete: (id: string) => void;
-};
-
-type MineralDetailModalProps = {
-  mineral: Mineral;
-  isOpen: boolean;
-  onClose: () => void;
-};
-
-
-// =================================================================================
-// --- HELPER & CHILD COMPONENTS ---
-// =================================================================================
-
-const MineralCard: React.FC<MineralCardProps> = ({ mineral, isCurator, onSelect, onEdit, onDelete }) => (
-    <div className="relative group glass-card rounded-lg overflow-hidden cursor-pointer animate-fade-in" onClick={() => onSelect(mineral)}>
-        <img src={mineral.imageUrls[0]} alt={mineral.name} className="w-full h-64 object-cover group-hover:scale-105 transition-transform duration-500" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-        <div className="absolute bottom-0 left-0 p-4">
-            <h3 className="text-lg font-medium tracking-wider text-shadow-strong">{mineral.name}</h3>
-            <p className="text-sm text-gray-400">{mineral.type}</p>
-        </div>
-        {isCurator && (
-             <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={(e) => { e.stopPropagation(); onEdit(mineral); }} className="p-2 bg-black/50 rounded-full hover:bg-purple-600"><EditIcon className="w-4 h-4" /></button>
-                <button onClick={(e) => { e.stopPropagation(); onDelete(mineral.id); }} className="p-2 bg-black/50 rounded-full hover:bg-red-600"><TrashIcon className="w-4 h-4" /></button>
-            </div>
-        )}
-    </div>
-);
-
-const MineralDetailModal: React.FC<MineralDetailModalProps> = ({ mineral, isOpen, onClose }) => {
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
-    useEffect(() => {
-        if (isOpen) {
-            setCurrentImageIndex(0);
-        }
-    }, [isOpen]);
-    
-    const nextImage = () => setCurrentImageIndex(prev => (prev + 1) % mineral.imageUrls.length);
-    const prevImage = () => setCurrentImageIndex(prev => (prev - 1 + mineral.imageUrls.length) % mineral.imageUrls.length);
-
-    if (!mineral) return null;
-
-    return (
-        <Modal isOpen={isOpen} onClose={onClose} title={mineral.name}>
-            <div className="grid md:grid-cols-2 gap-6">
-                <div className="relative aspect-square md:aspect-auto">
-                    <img src={mineral.imageUrls[currentImageIndex]} alt={`${mineral.name} - image ${currentImageIndex + 1}`} className="w-full h-full object-cover rounded-lg" />
-                     {mineral.imageUrls.length > 1 && (
-                        <>
-                            <button onClick={prevImage} className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-purple-600 transition-colors" aria-label="Previous image"><ArrowLeftIcon className="w-5 h-5" /></button>
-                            <button onClick={nextImage} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 rounded-full hover:bg-purple-600 transition-colors" aria-label="Next image"><ArrowRightIcon className="w-5 h-5" /></button>
-                        </>
-                    )}
-                </div>
-                <div className="space-y-4">
-                    <p className="text-gray-300 leading-relaxed">{mineral.description}</p>
-                    <div className="text-sm border-t border-white/10 pt-4 space-y-2">
-                        <p><strong>Type:</strong> {mineral.type}</p>
-                        <p><strong>Location:</strong> {mineral.location}</p>
-                        <p><strong>Rarity:</strong> <span className={`px-2 py-0.5 rounded-full text-xs ${mineral.rarity === 'Exceptional' || mineral.rarity === 'Very Rare' ? 'bg-purple-500/30 text-purple-200' : 'bg-gray-500/30 text-gray-300'}`}>{mineral.rarity}</span></p>
-                    </div>
-                </div>
-            </div>
-        </Modal>
-    );
-};
 
 // =================================================================================
 // --- MAIN APP COMPONENT ---
@@ -403,7 +326,7 @@ const App = () => {
             <AddEditMineralModal isOpen={addEditModalOpen} onClose={() => setAddEditModalOpen(false)} onSave={handleSaveMineral} mineralToEdit={mineralToEdit} allMineralTypes={allMineralTypes} onOpenIdentifyChat={openIdentifyChat} identifiedNameFromAI={identifiedNameFromAI} onResetIdentifiedName={() => setIdentifiedNameFromAI(null)} />
             <IdentifyWithAIChatModal isOpen={identifyChatModalOpen} onClose={() => setIdentifyChatModalOpen(false)} imageData={identifyImageData} onNameSelect={handleNameSelectFromAI} />
             <CustomizeUIModal isOpen={customizeUIModalOpen} onClose={() => setCustomizeUIModalOpen(false)} minerals={mineralsOnDisplay} currentLayout={appData.homePageLayout} onSaveLayout={handleSaveLayout} layoutHistory={appData.layoutHistory} onRestoreLayout={handleRestoreLayout} />
-            {selectedMineral && <MineralDetailModal mineral={selectedMineral} isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} />}
+            <MineralDetailModal mineral={selectedMineral} isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} />
         </div>
     );
 };
