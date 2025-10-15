@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { Mineral, HomePageLayout, LayoutHistoryEntry, IdentifyImageData } from '../types.ts';
+import { Mineral, HomePageLayout, LayoutHistoryEntry, IdentifyImageData, ChatContent } from '../types.ts';
 import { CURATOR_PASSWORD, RARITY_LEVELS } from '../constants.ts';
 import { generateDescription, suggestRarity, generateHomepageLayout, identifySpecimen, removeImageBackground, cleanImage, clarifyImage, LayoutGenerationResponse } from '../services/geminiService.ts';
 import Modal from './Modal.tsx';
@@ -356,7 +356,7 @@ export const IdentifyWithAIChatModal: React.FC<IdentifyWithAIChatModalProps> = (
         if (!text.trim() || isLoading || !imageData) return;
 
         const userMessage: AIChatMessage = { sender: 'user', text: text };
-        const currentChatHistory = messages
+        const currentChatHistory: ChatContent[] = messages
             .filter(m => m.sender === 'user' || m.sender === 'ai')
             .map(m => {
                 const role: 'user' | 'model' = m.sender === 'user' ? 'user' : 'model';

@@ -44,3 +44,13 @@ export interface AppData {
   homePageLayout: HomePageLayout;
   layoutHistory: LayoutHistoryEntry[];
 }
+
+// Shared types for AI chat history
+export interface ChatPart {
+    text: string;
+}
+
+export interface ChatContent {
+    role: 'user' | 'model';
+    parts: ChatPart[];
+}

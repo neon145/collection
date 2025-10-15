@@ -1,5 +1,4 @@
-import { Mineral, Rarity, HomePageLayout, IdentifyImageData } from '../types.ts';
-import { Content } from '@google/genai';
+import { Mineral, Rarity, HomePageLayout, ChatContent } from '../types.ts';
 
 export interface LayoutGenerationResponse {
     layout?: HomePageLayout;
@@ -51,7 +50,7 @@ export const suggestRarity = async (name: string, imageBase64: string, imageMime
     }
 };
 
-export const identifySpecimen = async (imageBase64: string, imageMimeType: string, history?: Content[], question?: string): Promise<IdentificationResponse> => {
+export const identifySpecimen = async (imageBase64: string, imageMimeType: string, history?: ChatContent[], question?: string): Promise<IdentificationResponse> => {
      try {
         return await fetchFromApi<IdentificationResponse>('/api/ai/identify-specimen', { imageBase64, imageMimeType, history, question });
     } catch (error) {
