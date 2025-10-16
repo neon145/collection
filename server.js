@@ -54,11 +54,13 @@ const createApiHandler = (apiFunction) => async (req, res) => {
 
 app.post('/api/ai/generate-description', createApiHandler(geminiApi.generateDescription));
 app.post('/api/ai/suggest-rarity', createApiHandler(geminiApi.suggestRarity));
+app.post('/api/ai/suggest-type', createApiHandler(geminiApi.suggestType));
 app.post('/api/ai/identify-specimen', createApiHandler(geminiApi.identifySpecimen));
 app.post('/api/ai/remove-background', createApiHandler(geminiApi.removeImageBackground));
 app.post('/api/ai/clean-image', createApiHandler(geminiApi.cleanImage));
 app.post('/api/ai/clarify-image', createApiHandler(geminiApi.clarifyImage));
 app.post('/api/ai/generate-layout', createApiHandler(geminiApi.generateHomepageLayout));
+app.post('/api/ai/get-dominant-color', createApiHandler(geminiApi.getDominantColor));
 
 
 // --- Static File Serving (for Production) ---

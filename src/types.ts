@@ -17,7 +17,7 @@ export interface IdentifyImageData {
 }
 
 // Types for AI-powered Homepage Customization
-export type HomeComponentType = 'hero' | 'grid-2' | 'grid-3' | 'list';
+export type HomeComponentType = 'hero' | 'grid-2' | 'grid-3' | 'list' | 'carousel';
 
 export interface HomeComponent {
   id: string;
@@ -28,6 +28,7 @@ export interface HomeComponent {
     type: 'zoom-in' | 'none';
     duration?: string;
   }
+  speed?: number; // For carousel, in seconds
   imageScale?: number;
 }
 

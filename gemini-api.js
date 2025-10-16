@@ -41,7 +41,7 @@ export const suggestRarity = async ({ name, imageBase64, imageMimeType }) => {
         const textPart = { text: prompt };
         const response = await ai.models.generateContent({
             model: textModel,
-            contents: { parts: [imagePart, textPart] },
+            contents: [{ parts: [imagePart, textPart] }],
         });
         const suggested = response.text.trim();
         const validRarities = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Exceptional'];
@@ -55,6 +55,23 @@ export const suggestRarity = async ({ name, imageBase64, imageMimeType }) => {
         return { rarity: 'Common' };
     }
 };
+
+export const suggestType = async ({ name, imageBase64, imageMimeType }) => {
+    const prompt = `Based on the image and name ('${name}') of this specimen, what is its general mineral classification or type (e.g., Quartz, Feldspar, Igneous Rock)? Return only the type name.`;
+    try {
+        const imagePart = fileDataToPart(imageBase64, imageMimeType);
+        const textPart = { text: prompt };
+        const response = await ai.models.generateContent({
+            model: textModel,
+            contents: [{ parts: [imagePart, textPart] }],
+        });
+        return { type: response.text.trim() };
+    } catch (error) {
+        console.error("Error suggesting type:", error);
+        return { type: '' };
+    }
+};
+
 
 export const identifySpecimen = async ({ imageBase64, imageMimeType, history, question }) => {
     const systemInstruction = "You are a friendly, expert gemologist. Your goal is to identify mineral specimens from images and answer user questions. When you identify a mineral, provide a brief, interesting description and suggest 3-5 possible specific names for it in a structured format. Be conversational and helpful.";
@@ -110,7 +127,7 @@ async function processImageEdit({ imageBase64, imageMimeType, prompt }) {
 
         const response = await ai.models.generateContent({
             model: imageEditModel,
-            contents: { parts: [imagePart, textPart] },
+            contents: [{ parts: [imagePart, textPart] }],
             config: {
                 responseModalities: [Modality.IMAGE],
             },
@@ -146,15 +163,36 @@ export const clarifyImage = (body) => {
     return processImageEdit({ ...body, prompt });
 };
 
+export const getDominantColor = async ({ imageBase64, imageMimeType }) => {
+    const prompt = "Analyze this image and return the dominant color as a hex code. Return only the hex code and nothing else. e.g. #A7B2C4";
+    try {
+        const imagePart = fileDataToPart(imageBase64, imageMimeType);
+        const textPart = { text: prompt };
+        const response = await ai.models.generateContent({
+            model: textModel,
+            contents: [{ parts: [imagePart, textPart] }],
+        });
+        const color = response.text.trim();
+        if (/^#[0-9A-F]{6}$/i.test(color)) {
+            return { color };
+        }
+        return { color: null };
+    } catch (error) {
+        console.error("Error getting dominant color:", error);
+        return { color: null };
+    }
+};
+
 export const generateHomepageLayout = async ({ currentLayout, minerals, prompt }) => {
     const systemInstruction = `You are an AI assistant that designs the homepage layout for a luxury mineral collection website.
 - You will be given the current layout, a list of available minerals, and a user's request.
 - Your task is to generate a new layout that fulfills the user's request.
-- The available component types are 'hero', 'grid-2' (2 columns), 'grid-3' (3 columns), 'list'.
-- A 'hero' component should only contain one mineral.
+- The available component types are 'hero', 'carousel', 'grid-2' (2 columns), 'grid-3' (3 columns).
+- A 'hero' component should only contain one mineral. A 'carousel' can contain multiple minerals.
+- For 'hero' and 'carousel' components, you should ALWAYS add a subtle 'zoom-in' animation with a duration between 15s and 30s unless the user explicitly requests no animation.
+- A 'carousel' can also have a 'speed' property, which is the time in seconds each slide is displayed (default is 8).
 - Ensure all 'mineralIds' in the new layout correspond to IDs from the provided minerals list.
 - You can add, remove, or reorder components.
-- You can also add animations. The only supported animation is type: 'zoom-in' with a duration string (e.g., '15s').
 - If the user's request is ambiguous (e.g., they mention a mineral name but multiple minerals have similar names), you MUST ask for clarification.
 - Provide a brief, one-sentence summary of the changes you made.`;
 
@@ -186,16 +224,17 @@ Generate a new layout object and a summary. If the user request is ambiguous, pr
                                 type: Type.OBJECT,
                                 properties: {
                                     id: { type: Type.STRING },
-                                    type: { type: Type.STRING, description: "one of 'hero', 'grid-2', 'grid-3', 'list'" },
+                                    type: { type: Type.STRING, description: "one of 'hero', 'carousel', 'grid-2', 'grid-3'" },
                                     mineralIds: { type: Type.ARRAY, items: { type: Type.STRING } },
                                     title: { type: Type.STRING, description: "Optional title for the component" },
                                     animation: {
                                         type: Type.OBJECT,
                                         properties: {
                                             type: { type: Type.STRING, description: "e.g., 'zoom-in' or 'none'" },
-                                            duration: { type: Type.STRING, description: "e.g., '15s'" }
+                                            duration: { type: Type.STRING, description: "e.g., '20s'" }
                                         }
-                                    }
+                                    },
+                                    speed: { type: Type.INTEGER, description: "For carousel, seconds per slide."}
                                 },
                                 required: ['id', 'type', 'mineralIds']
                             }

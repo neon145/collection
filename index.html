@@ -9,6 +9,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lexend+Mega:wght@100..900&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --shadow-color-rgb: 147, 112, 219; /* Default to purple */
+      }
       body {
         font-family: 'Lexend Mega', sans-serif;
         background-color: #050408;
@@ -20,11 +23,12 @@
         left: 0;
         width: 100%;
         height: 100vh;
-        background: radial-gradient(circle at 20% 20%, rgba(147, 112, 219, 0.08), transparent 40%),
+        background: radial-gradient(circle at 20% 20%, rgba(var(--shadow-color-rgb), 0.08), transparent 40%),
                     radial-gradient(circle at 80% 70%, rgba(75, 0, 130, 0.08), transparent 40%);
         z-index: -1;
         pointer-events: none;
         animation: subtlePulse 15s ease-in-out infinite alternate;
+        transition: background 1s ease-in-out;
       }
       strong, b {
         font-weight: 600;
@@ -89,7 +93,8 @@
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
       }
       .subtle-glow {
-        box-shadow: 0 0 20px rgba(147, 112, 219, 0.1);
+        box-shadow: 0 0 40px rgba(var(--shadow-color-rgb), 0.2);
+        transition: box-shadow 1s ease-in-out;
       }
       .text-shadow-strong {
         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
@@ -143,26 +148,33 @@
         padding: 0.4rem 0.8rem;
         font-size: 0.75rem;
       }
-      .layers-icon {
-        position: relative;
-        width: 1.25rem;
-        height: 1.25rem;
-        flex-shrink: 0;
+      select option {
+        background: #050408;
+        color: white;
       }
-      .layers-icon::before, .layers-icon::after {
-        content: '';
+      .carousel-slide {
+        flex: 0 0 100%;
+        transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        position: relative;
+        opacity: 0;
+      }
+      .carousel-slide.active {
+        transform: translateX(0);
+        opacity: 1;
+        z-index: 1;
+      }
+      .carousel-slide.prev {
+        transform: translateX(-100%);
+      }
+      .carousel-slide.next {
+        transform: translateX(100%);
+      }
+      .carousel-slider {
         position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
-        border-radius: 3px;
-        border: 1.5px solid white;
-        background-color: rgba(0,0,0,0.3);
-      }
-      .layers-icon::before {
-        transform: rotate(-10deg);
-      }
-      .layers-icon::after {
-        transform: rotate(10deg);
       }
     </style>
 <script type="importmap">

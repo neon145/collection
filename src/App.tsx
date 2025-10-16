@@ -1,10 +1,22 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Mineral, HomePageLayout, LayoutHistoryEntry, Rarity, AppData, IdentifyImageData, HomeComponent } from './types.ts';
 import { RARITY_LEVELS } from './constants.ts';
+import { getDominantColor } from './services/geminiService.ts';
 import { PlusIcon, EditIcon, WandIcon, MenuIcon, CloseIcon, TrashIcon } from './components/icons.tsx';
 import { CuratorLoginModal, AddEditMineralModal, IdentifyWithAIChatModal, CustomizeUIModal } from './components/CuratorTools.tsx';
 import MineralCard from './components/MineralCard.tsx';
 import MineralDetailModal from './components/MineralDetailModal.tsx';
+import HeroCarousel from './components/HeroCarousel.tsx';
+
+
+// =================================================================================
+// --- HELPER FUNCTIONS ---
+// =================================================================================
+
+const hexToRgb = (hex: string): string | null => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : null;
+};
 
 
 // =================================================================================
@@ -47,7 +59,8 @@ const App = () => {
                 }
                 const data = await response.json();
                 setAppData(data);
-            } catch (error) {
+            } catch (error)
+                {
                 console.error("Error fetching data from server:", error);
             } finally {
                 setIsLoading(false);
@@ -79,6 +92,29 @@ const App = () => {
             }
         }, 1000);
     }, [appData]);
+
+    // Dynamic UI effect for shadow color
+    useEffect(() => {
+        const setDynamicShadow = async () => {
+            const firstComponent = appData.homePageLayout[0];
+            if ((firstComponent?.type === 'hero' || firstComponent?.type === 'carousel') && firstComponent.mineralIds.length > 0) {
+                const firstMineral = appData.minerals.find(m => m.id === firstComponent.mineralIds[0]);
+                const imageUrl = firstMineral?.imageUrls[0];
+                
+                if (imageUrl && imageUrl.startsWith('data:')) {
+                    const [header, data] = imageUrl.split(',');
+                    const mimeType = header.replace('data:', '').replace(';base64', '');
+                    const hexColor = await getDominantColor(data, mimeType);
+                    const rgbColor = hexColor ? hexToRgb(hexColor) : null;
+                    
+                    if (rgbColor) {
+                        document.documentElement.style.setProperty('--shadow-color-rgb', rgbColor);
+                    }
+                }
+            }
+        };
+        setDynamicShadow();
+    }, [appData.homePageLayout, appData.minerals]);
     
     // Derived state
     const allMineralTypes = useMemo(() => [...new Set(appData.minerals.map(m => m.type))].sort(), [appData.minerals]);
@@ -171,6 +207,8 @@ const App = () => {
         const cardHandlers = { onSelect: openDetailModal, onEdit: openEditModal, onDelete: handleDeleteMineral, isCurator };
 
         switch (component.type) {
+            case 'carousel':
+                return <HeroCarousel key={component.id} component={component} minerals={componentMinerals} {...cardHandlers} />;
             case 'hero':
                 const heroMineral = componentMinerals[0];
                 return (

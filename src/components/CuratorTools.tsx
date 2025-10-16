@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { Mineral, HomePageLayout, LayoutHistoryEntry, IdentifyImageData, ChatContent } from '../types.ts';
 import { CURATOR_PASSWORD, RARITY_LEVELS } from '../constants.ts';
-import { generateDescription, suggestRarity, generateHomepageLayout, identifySpecimen, removeImageBackground, cleanImage, clarifyImage, LayoutGenerationResponse } from '../services/geminiService.ts';
+import { generateDescription, suggestRarity, suggestType, generateHomepageLayout, identifySpecimen, removeImageBackground, cleanImage, clarifyImage, LayoutGenerationResponse } from '../services/geminiService.ts';
 import Modal from './Modal.tsx';
 import { ChatBubbleIcon, SparklesIcon, TrashIcon, WandIcon, PhotoIcon, DocumentTextIcon, BroomIcon, ViewfinderIcon } from './icons.tsx';
 
@@ -104,7 +104,7 @@ type ImageAiState = { bgRemoval?: boolean; cleanup?: boolean; clarify?: boolean;
 
 export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen, onClose, onSave, mineralToEdit, allMineralTypes, onOpenIdentifyChat, identifiedNameFromAI, onResetIdentifiedName }) => {
     const [formState, setFormState] = useState<Omit<Mineral, 'id'>>(emptyFormState);
-    const [isGenerating, setIsGenerating] = useState({ description: false, rarity: false });
+    const [isGenerating, setIsGenerating] = useState({ description: false, rarity: false, type: false });
     const [imageAiStates, setImageAiStates] = useState<Record<number, ImageAiState>>({});
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -124,7 +124,7 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
                 setFormState(emptyFormState);
                 if (fileInputRef.current) fileInputRef.current.value = '';
             }
-            setIsGenerating({ description: false, rarity: false });
+            setIsGenerating({ description: false, rarity: false, type: false });
             setImageAiStates({});
         }
     }, [isOpen, mineralToEdit]);
@@ -186,6 +186,18 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
         const newRarity = await suggestRarity(formState.name, primaryImageData.base64, primaryImageData.mimeType);
         setFormState(prev => ({...prev, rarity: newRarity}));
         setIsGenerating(prev => ({ ...prev, rarity: false }));
+    };
+
+    const handleSuggestType = async () => {
+        const primaryImageData = getPrimaryImageData();
+        if (!primaryImageData || !formState.name) {
+            alert("Please provide a name and at least one image to suggest a type.");
+            return;
+        }
+        setIsGenerating(prev => ({ ...prev, type: true }));
+        const newType = await suggestType(formState.name, primaryImageData.base64, primaryImageData.mimeType);
+        setFormState(prev => ({...prev, type: newType}));
+        setIsGenerating(prev => ({ ...prev, type: false }));
     };
 
     const handleImageAiAction = async (index: number, action: 'bgRemoval' | 'cleanup' | 'clarify') => {
@@ -258,11 +270,14 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-                    <div>
+                    <div className="relative">
                         <input type="text" name="type" list="mineral-types-datalist" value={formState.type} onChange={handleChange} placeholder="Type (e.g., Quartz)" className={formFieldClass} required />
                         <datalist id="mineral-types-datalist">
                             {allMineralTypes.map(type => <option key={type} value={type} />)}
                         </datalist>
+                         <button type="button" onClick={handleSuggestType} disabled={isGenerating.type || !primaryImageData} className="absolute top-1/2 right-2 -translate-y-1/2 p-1.5 bg-white/10 hover:bg-white/20 rounded-md disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                            <SparklesIcon className={`w-4 h-4 ${isGenerating.type ? 'animate-pulse' : ''}`} />
+                        </button>
                     </div>
                      <div className="relative">
                         <select name="rarity" value={formState.rarity} onChange={handleChange} className={formFieldClass + " appearance-none"}>
