@@ -367,7 +367,6 @@ const App = () => {
             )}
             
             <CuratorLoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} onLoginSuccess={handleLoginSuccess} />
-            {/* FIX: Corrected typo in component name from AddEditModalModal to AddEditMineralModal. */}
             <AddEditMineralModal isOpen={addEditModalOpen} onClose={() => setAddEditModalOpen(false)} onSave={handleSaveMineral} mineralToEdit={mineralToEdit} allMineralTypes={allMineralTypes} onOpenIdentifyChat={openIdentifyChat} identifiedNameFromAI={identifiedNameFromAI} onResetIdentifiedName={() => setIdentifiedNameFromAI(null)} />
             <IdentifyWithAIChatModal isOpen={identifyChatModalOpen} onClose={() => setIdentifyChatModalOpen(false)} imageData={identifyImageData} onNameSelect={handleNameSelectFromAI} />
             <CustomizeUIModal isOpen={customizeUIModalOpen} onClose={() => setCustomizeUIModalOpen(false)} minerals={mineralsOnDisplay} currentLayout={appData.homePageLayout} onSaveLayout={handleSaveLayout} layoutHistory={appData.layoutHistory} onRestoreLayout={handleRestoreLayout} />
