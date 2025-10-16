@@ -2,23 +2,9 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Mineral, HomePageLayout, LayoutHistoryEntry, IdentifyImageData, ChatContent } from '../types.ts';
 import { CURATOR_PASSWORD, RARITY_LEVELS } from '../constants.ts';
 import { generateDescription, suggestRarity, suggestType, generateHomepageLayout, identifySpecimen, removeImageBackground, cleanImage, clarifyImage, LayoutGenerationResponse } from '../services/geminiService.ts';
+import { compressImage } from '../utils.ts';
 import Modal from './Modal.tsx';
 import { ChatBubbleIcon, SparklesIcon, TrashIcon, WandIcon, PhotoIcon, DocumentTextIcon, BroomIcon, ViewfinderIcon } from './icons.tsx';
-
-// --- Helper Functions ---
-const fileToDataUrl = (file: File): Promise<{dataUrl: string, base64: string, mimeType: string}> => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      const result = reader.result as string;
-      const [header, data] = result.split(',');
-      const mimeType = header.replace('data:', '').replace(';base64', '');
-      resolve({ dataUrl: result, base64: data, mimeType });
-    };
-    reader.onerror = (error) => reject(error);
-  });
-};
 
 
 // --- Login Modal ---
@@ -108,12 +94,13 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
     const [isGenerating, setIsGenerating] = useState({ description: false, rarity: false, type: false });
     const [imageAiStates, setImageAiStates] = useState<Record<number, ImageAiState>>({});
     const [aiCooldowns, setAiCooldowns] = useState<Record<number, CooldownState>>({});
+    const [isProcessing, setIsProcessing] = useState(false);
     const [apiError, setApiError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const getPrimaryImageData = () => {
+    const getPrimaryImageData = (): IdentifyImageData | null => {
         const primaryImageUrl = formState.imageUrls[0];
-        if (!primaryImageUrl || !primaryImageUrl.startsWith('data:')) return null;
+        if (!primaryImageUrl) return null;
         const [header, data] = primaryImageUrl.split(',');
         const mimeType = header.replace('data:', '').replace(';base64', '');
         return { base64: data, mimeType };
@@ -121,11 +108,9 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
 
     useEffect(() => {
         if (isOpen) {
-            if (mineralToEdit) {
-                setFormState(mineralToEdit);
-            } else {
-                setFormState(emptyFormState);
-                if (fileInputRef.current) fileInputRef.current.value = '';
+            setFormState(mineralToEdit || emptyFormState);
+            if (!mineralToEdit && fileInputRef.current) {
+                fileInputRef.current.value = '';
             }
             setIsGenerating({ description: false, rarity: false, type: false });
             setImageAiStates({});
@@ -152,17 +137,21 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
     
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
+            setApiError(null);
+            setIsProcessing(true);
             const files = Array.from(e.target.files);
-            const dataPromises = files.map(fileToDataUrl);
-            const imageDataResults = await Promise.all(dataPromises);
-            const newDataUrls = imageDataResults.map(res => res.dataUrl);
+            
+            const compressedImages = await Promise.all(
+                files.map(file => compressImage(file))
+            );
             
             setFormState(prev => ({
                 ...prev,
-                imageUrls: [...prev.imageUrls, ...newDataUrls]
+                imageUrls: [...prev.imageUrls, ...compressedImages]
             }));
             
             if (fileInputRef.current) fileInputRef.current.value = '';
+            setIsProcessing(false);
         }
     };
     
@@ -192,13 +181,15 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
         setFormState(prev => ({...prev, rarity: newRarity}));
         setIsGenerating(prev => ({ ...prev, rarity: false }));
     };
-    
+
     const handleSuggestType = async () => {
-        const primaryImageData = getPrimaryImageData();
-        if (!primaryImageData || !formState.name) {
-            alert("Please provide a name and at least one image to suggest a type.");
+        if (!formState.name) {
+             alert("Please provide a name before suggesting a type.");
             return;
         }
+        const primaryImageData = getPrimaryImageData();
+        if (!primaryImageData) return;
+        
         setIsGenerating(prev => ({ ...prev, type: true }));
         const newType = await suggestType(formState.name, primaryImageData.base64, primaryImageData.mimeType);
         setFormState(prev => ({...prev, type: newType}));
@@ -207,16 +198,16 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
 
     const handleImageAiAction = async (index: number, action: 'bgRemoval' | 'cleanup' | 'clarify') => {
         const imageUrl = formState.imageUrls[index];
-        if (!imageUrl || !imageUrl.startsWith('data:')) return;
+        if (!imageUrl) return;
         
         setImageAiStates(prev => ({ ...prev, [index]: { ...prev[index], [action]: true }}));
         setApiError(null);
         
-        const [header, data] = imageUrl.split(',');
-        const mimeType = header.replace('data:', '').replace(';base64', '');
-
-        let newImageUrl: string | null = null;
         try {
+            const [header, data] = imageUrl.split(',');
+            const mimeType = header.replace('data:', '').replace(';base64', '');
+
+            let newImageUrl: string | null = null;
             switch(action) {
                 case 'bgRemoval':
                     newImageUrl = await removeImageBackground(data, mimeType);
@@ -234,10 +225,10 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
             }
 
             if (newImageUrl) {
-                setFormState(prev => ({
+                 setFormState(prev => ({
                     ...prev,
                     imageUrls: prev.imageUrls.map((url, i) => i === index ? newImageUrl! : url)
-                }));
+                 }));
             } else {
                  setApiError(`The ${action} action failed. The AI may be busy.`);
             }
@@ -246,6 +237,7 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
                 setApiError("AI is cooling down. Free plan limits reached. Please try again in a minute.");
             } else {
                 setApiError(`An unexpected error occurred during the ${action} action.`);
+                console.error(error);
             }
         }
         finally {
@@ -315,7 +307,8 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
                 
                 <div>
                     <label className="text-sm text-gray-400">Images (first is primary)</label>
-                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" multiple className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-white/10 file:text-purple-200 hover:file:bg-white/20 cursor-pointer" />
+                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" multiple disabled={isProcessing} className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-white/10 file:text-purple-200 hover:file:bg-white/20 disabled:opacity-50 cursor-pointer" />
+                     {isProcessing && <p className="text-purple-300 text-xs text-center mt-2">Compressing image(s)...</p>}
                      {apiError && <p className="text-yellow-400 text-xs text-center mt-2">{apiError}</p>}
                 </div>
 
@@ -355,8 +348,8 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
                 </div>
 
                 <div className="pt-4 flex justify-end">
-                    <button type="submit" className="glass-button glass-button-purple">
-                        Save
+                    <button type="submit" disabled={isProcessing} className="glass-button glass-button-purple disabled:opacity-50">
+                        {isProcessing ? 'Processing...' : 'Save'}
                     </button>
                 </div>
             </form>

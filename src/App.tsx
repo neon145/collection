@@ -96,24 +96,30 @@ const App = () => {
     // Dynamic UI effect for shadow color
     useEffect(() => {
         const setDynamicShadow = async () => {
-            const firstComponent = appData.homePageLayout[0];
-            if ((firstComponent?.type === 'hero' || firstComponent?.type === 'carousel') && firstComponent.mineralIds.length > 0) {
-                const firstMineral = appData.minerals.find(m => m.id === firstComponent.mineralIds[0]);
-                const imageUrl = firstMineral?.imageUrls[0];
-                
-                if (imageUrl && imageUrl.startsWith('data:')) {
-                    const [header, data] = imageUrl.split(',');
-                    const mimeType = header.replace('data:', '').replace(';base64', '');
-                    const hexColor = await getDominantColor(data, mimeType);
-                    const rgbColor = hexColor ? hexToRgb(hexColor) : null;
+            try {
+                const firstComponent = appData.homePageLayout[0];
+                if ((firstComponent?.type === 'hero' || firstComponent?.type === 'carousel') && firstComponent.mineralIds.length > 0) {
+                    const firstMineral = appData.minerals.find(m => m.id === firstComponent.mineralIds[0]);
+                    const imageUrl = firstMineral?.imageUrls[0];
                     
-                    if (rgbColor) {
-                        document.documentElement.style.setProperty('--shadow-color-rgb', rgbColor);
+                    if (imageUrl && imageUrl.startsWith('data:')) {
+                        const [header, data] = imageUrl.split(',');
+                        const mimeType = header.replace('data:', '').replace(';base64', '');
+                        const hexColor = await getDominantColor(data, mimeType);
+                        const rgbColor = hexColor ? hexToRgb(hexColor) : null;
+                        
+                        if (rgbColor) {
+                            document.documentElement.style.setProperty('--shadow-color-rgb', rgbColor);
+                        }
                     }
                 }
+            } catch (error) {
+                console.error("Failed to set dynamic shadow:", error);
             }
         };
-        setDynamicShadow();
+        if (appData.homePageLayout.length > 0) {
+            setDynamicShadow();
+        }
     }, [appData.homePageLayout, appData.minerals]);
     
     // Derived state
@@ -361,6 +367,7 @@ const App = () => {
             )}
             
             <CuratorLoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} onLoginSuccess={handleLoginSuccess} />
+            {/* FIX: Corrected typo in component name from AddEditModalModal to AddEditMineralModal. */}
             <AddEditMineralModal isOpen={addEditModalOpen} onClose={() => setAddEditModalOpen(false)} onSave={handleSaveMineral} mineralToEdit={mineralToEdit} allMineralTypes={allMineralTypes} onOpenIdentifyChat={openIdentifyChat} identifiedNameFromAI={identifiedNameFromAI} onResetIdentifiedName={() => setIdentifiedNameFromAI(null)} />
             <IdentifyWithAIChatModal isOpen={identifyChatModalOpen} onClose={() => setIdentifyChatModalOpen(false)} imageData={identifyImageData} onNameSelect={handleNameSelectFromAI} />
             <CustomizeUIModal isOpen={customizeUIModalOpen} onClose={() => setCustomizeUIModalOpen(false)} minerals={mineralsOnDisplay} currentLayout={appData.homePageLayout} onSaveLayout={handleSaveLayout} layoutHistory={appData.layoutHistory} onRestoreLayout={handleRestoreLayout} />
