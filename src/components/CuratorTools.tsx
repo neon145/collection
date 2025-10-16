@@ -101,11 +101,14 @@ const emptyFormState: Omit<Mineral, 'id'> = {
 };
 
 type ImageAiState = { bgRemoval?: boolean; cleanup?: boolean; clarify?: boolean; };
+type CooldownState = { bgRemoval?: boolean; cleanup?: boolean; clarify?: boolean; };
 
 export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen, onClose, onSave, mineralToEdit, allMineralTypes, onOpenIdentifyChat, identifiedNameFromAI, onResetIdentifiedName }) => {
     const [formState, setFormState] = useState<Omit<Mineral, 'id'>>(emptyFormState);
     const [isGenerating, setIsGenerating] = useState({ description: false, rarity: false, type: false });
     const [imageAiStates, setImageAiStates] = useState<Record<number, ImageAiState>>({});
+    const [aiCooldowns, setAiCooldowns] = useState<Record<number, CooldownState>>({});
+    const [apiError, setApiError] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const getPrimaryImageData = () => {
@@ -126,6 +129,8 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
             }
             setIsGenerating({ description: false, rarity: false, type: false });
             setImageAiStates({});
+            setAiCooldowns({});
+            setApiError(null);
         }
     }, [isOpen, mineralToEdit]);
 
@@ -187,7 +192,7 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
         setFormState(prev => ({...prev, rarity: newRarity}));
         setIsGenerating(prev => ({ ...prev, rarity: false }));
     };
-
+    
     const handleSuggestType = async () => {
         const primaryImageData = getPrimaryImageData();
         if (!primaryImageData || !formState.name) {
@@ -205,6 +210,7 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
         if (!imageUrl || !imageUrl.startsWith('data:')) return;
         
         setImageAiStates(prev => ({ ...prev, [index]: { ...prev[index], [action]: true }}));
+        setApiError(null);
         
         const [header, data] = imageUrl.split(',');
         const mimeType = header.replace('data:', '').replace(';base64', '');
@@ -233,10 +239,21 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
                     imageUrls: prev.imageUrls.map((url, i) => i === index ? newImageUrl! : url)
                 }));
             } else {
-                 alert(`Sorry, the ${action} action failed.`);
+                 setApiError(`The ${action} action failed. The AI may be busy.`);
             }
-        } finally {
+        } catch (error: any) {
+            if (error.status === 429) {
+                setApiError("AI is cooling down. Free plan limits reached. Please try again in a minute.");
+            } else {
+                setApiError(`An unexpected error occurred during the ${action} action.`);
+            }
+        }
+        finally {
             setImageAiStates(prev => ({ ...prev, [index]: { ...prev[index], [action]: false }}));
+            setAiCooldowns(prev => ({...prev, [index]: {...prev[index], [action]: true}}));
+            setTimeout(() => {
+                setAiCooldowns(prev => ({...prev, [index]: {...prev[index], [action]: false}}));
+            }, 60000); // 60 second cooldown
         }
     };
 
@@ -299,24 +316,26 @@ export const AddEditMineralModal: React.FC<AddEditMineralModalProps> = ({ isOpen
                 <div>
                     <label className="text-sm text-gray-400">Images (first is primary)</label>
                     <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" multiple className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-white/10 file:text-purple-200 hover:file:bg-white/20 cursor-pointer" />
+                     {apiError && <p className="text-yellow-400 text-xs text-center mt-2">{apiError}</p>}
                 </div>
 
                 {formState.imageUrls.length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                         {formState.imageUrls.map((url, index) => {
                             const aiState = imageAiStates[index] || {};
+                            const cooldowns = aiCooldowns[index] || {};
                             const isBusy = aiState.bgRemoval || aiState.cleanup || aiState.clarify;
                             return (
                                 <div key={index} className="relative group aspect-square">
                                     <img src={url} alt={`preview ${index + 1}`} className="w-full h-full object-cover rounded-md" />
                                     <div className={`absolute inset-0 bg-black/60 transition-opacity flex items-center justify-center gap-1 ${isBusy ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                                        <button title="Clarify" type="button" onClick={() => handleImageAiAction(index, 'clarify')} disabled={isBusy} className="p-1.5 bg-black/50 rounded-full text-white hover:bg-green-600 disabled:opacity-50 disabled:animate-pulse transition-colors">
+                                        <button title="Clarify" type="button" onClick={() => handleImageAiAction(index, 'clarify')} disabled={isBusy || cooldowns.clarify} className="p-1.5 bg-black/50 rounded-full text-white hover:bg-green-600 disabled:opacity-50 disabled:animate-pulse transition-colors">
                                             <ViewfinderIcon className="w-4 h-4" />
                                         </button>
-                                        <button title="Cleanup" type="button" onClick={() => handleImageAiAction(index, 'cleanup')} disabled={isBusy} className="p-1.5 bg-black/50 rounded-full text-white hover:bg-yellow-600 disabled:opacity-50 disabled:animate-pulse transition-colors">
+                                        <button title="Cleanup" type="button" onClick={() => handleImageAiAction(index, 'cleanup')} disabled={isBusy || cooldowns.cleanup} className="p-1.5 bg-black/50 rounded-full text-white hover:bg-yellow-600 disabled:opacity-50 disabled:animate-pulse transition-colors">
                                             <BroomIcon className="w-4 h-4" />
                                         </button>
-                                        <button title="Remove Background" type="button" onClick={() => handleImageAiAction(index, 'bgRemoval')} disabled={isBusy} className="p-1.5 bg-black/50 rounded-full text-white hover:bg-blue-600 disabled:opacity-50 disabled:animate-pulse transition-colors">
+                                        <button title="Remove Background" type="button" onClick={() => handleImageAiAction(index, 'bgRemoval')} disabled={isBusy || cooldowns.bgRemoval} className="p-1.5 bg-black/50 rounded-full text-white hover:bg-blue-600 disabled:opacity-50 disabled:animate-pulse transition-colors">
                                             <PhotoIcon className="w-4 h-4" />
                                         </button>
                                         <button title="Delete" type="button" onClick={() => handleRemoveImage(index)} disabled={isBusy} className="p-1.5 bg-black/50 rounded-full text-white hover:bg-red-600 transition-colors">
@@ -502,7 +521,7 @@ export const CustomizeUIModal: React.FC<CustomizeUIModalProps> = ({ isOpen, onCl
     useEffect(() => {
         if(isOpen) {
             setView('chat');
-            setMessages([{ sender: 'system', text: "Describe how you'd like to change the homepage. You can ask for animations too, like 'make the hero image slowly zoom in'." }]);
+            setMessages([{ sender: 'system', text: "Describe how you'd like to change the homepage. You can ask for animations, carousels, or grids." }]);
             setInput('');
         }
     }, [isOpen]);

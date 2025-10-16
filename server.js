@@ -47,7 +47,11 @@ const createApiHandler = (apiFunction) => async (req, res) => {
         const result = await apiFunction(req.body);
         res.json(result);
     } catch (error) {
-        console.error(`Error in AI API endpoint:`, error);
+        console.error(`Error in AI API endpoint for ${apiFunction.name}:`, error.message);
+        // Check for specific Google API error structure for rate limiting
+        if (error.toString().includes('429')) {
+             return res.status(429).json({ error: 'Quota exceeded. Please try again in a moment.' });
+        }
         res.status(500).json({ error: 'An error occurred with the AI service.' });
     }
 };

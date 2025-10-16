@@ -28,7 +28,7 @@
         z-index: -1;
         pointer-events: none;
         animation: subtlePulse 15s ease-in-out infinite alternate;
-        transition: background 1s ease-in-out;
+        transition: background 1s ease-in-out, opacity 1s ease-in-out;
       }
       strong, b {
         font-weight: 600;
@@ -149,32 +149,23 @@
         font-size: 0.75rem;
       }
       select option {
-        background: #050408;
+        background: #0c0513;
         color: white;
       }
       .carousel-slide {
         flex: 0 0 100%;
-        transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-        position: relative;
+        transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.8s ease-in-out;
+        position: absolute;
         opacity: 0;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
       }
       .carousel-slide.active {
         transform: translateX(0);
         opacity: 1;
         z-index: 1;
-      }
-      .carousel-slide.prev {
-        transform: translateX(-100%);
-      }
-      .carousel-slide.next {
-        transform: translateX(100%);
-      }
-      .carousel-slider {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
       }
     </style>
 <script type="importmap">

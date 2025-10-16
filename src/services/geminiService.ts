@@ -14,29 +14,26 @@ export interface IdentificationResponse {
     names: string[];
 }
 
+// A generic fetch wrapper for API calls to our own backend
 async function fetchFromApi<T>(endpoint: string, body: object): Promise<T> {
-    try {
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body),
-        });
-        if (!response.ok) {
-            throw new Error(`API call failed with status: ${response.status}`);
-        }
-        return response.json();
-    } catch (error) {
-        console.error(`Error fetching from ${endpoint}:`, error);
-        throw error; // Re-throw to be handled by the caller
+    const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+        // Forward the response so the calling function can inspect the status code
+        throw response;
     }
+    return response.json();
 }
-
 
 export const generateDescription = async (mineral: Omit<Mineral, 'id' | 'imageUrls' | 'description' | 'onDisplay' >): Promise<string> => {
     try {
         const result = await fetchFromApi<{ description: string }>('/api/ai/generate-description', { mineral });
         return result.description;
     } catch (error) {
+        console.error("Error generating description:", error);
         return "An error occurred while generating the description. Please try again.";
     }
 };
@@ -46,6 +43,7 @@ export const suggestRarity = async (name: string, imageBase64: string, imageMime
         const result = await fetchFromApi<{ rarity: Rarity }>('/api/ai/suggest-rarity', { name, imageBase64, imageMimeType });
         return result.rarity;
     } catch (error) {
+        console.error("Error suggesting rarity:", error);
         return 'Common';
     }
 };
@@ -55,6 +53,7 @@ export const suggestType = async (name: string, imageBase64: string, imageMimeTy
         const result = await fetchFromApi<{ type: string }>('/api/ai/suggest-type', { name, imageBase64, imageMimeType });
         return result.type;
     } catch (error) {
+        console.error("Error suggesting type:", error);
         return '';
     }
 };
@@ -64,6 +63,7 @@ export const identifySpecimen = async (imageBase64: string, imageMimeType: strin
      try {
         return await fetchFromApi<IdentificationResponse>('/api/ai/identify-specimen', { imageBase64, imageMimeType, history, question });
     } catch (error) {
+        console.error("Error identifying specimen:", error);
         return {
             text: "I'm sorry, I encountered an error trying to identify the specimen. Please try again or rephrase your question.",
             names: []
@@ -72,13 +72,9 @@ export const identifySpecimen = async (imageBase64: string, imageMimeType: strin
 };
 
 async function processImageEdit(endpoint: string, imageBase64: string, imageMimeType: string, mineralName?: string): Promise<string | null> {
-    try {
-        const body = mineralName ? { imageBase64, imageMimeType, mineralName } : { imageBase64, imageMimeType };
-        const result = await fetchFromApi<{ imageUrl: string | null }>(endpoint, body);
-        return result.imageUrl;
-    } catch (error) {
-        return null;
-    }
+    const body = mineralName ? { imageBase64, imageMimeType, mineralName } : { imageBase64, imageMimeType };
+    const result = await fetchFromApi<{ imageUrl: string | null }>(endpoint, body);
+    return result.imageUrl;
 }
 
 export const removeImageBackground = (imageBase64: string, imageMimeType: string) => {
@@ -97,6 +93,7 @@ export const generateHomepageLayout = async (currentLayout: HomePageLayout, mine
     try {
         return await fetchFromApi<LayoutGenerationResponse>('/api/ai/generate-layout', { currentLayout, minerals, prompt });
     } catch (error) {
+        console.error("Error generating layout:", error);
         return null;
     }
 };
@@ -106,6 +103,7 @@ export const getDominantColor = async (imageBase64: string, imageMimeType: strin
         const result = await fetchFromApi<{ color: string }>('/api/ai/get-dominant-color', { imageBase64, imageMimeType });
         return result.color;
     } catch (error) {
+        console.error("Error getting dominant color:", error);
         return null;
     }
 };

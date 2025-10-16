@@ -21,55 +21,40 @@ export const generateDescription = async ({ mineral }) => {
     - Rarity: ${mineral.rarity}
     The description should be 2-3 sentences long, highlighting its unique features and appeal to collectors. Do not use markdown formatting.`;
 
-    try {
-        const response = await ai.models.generateContent({
-            model: textModel,
-            contents: prompt,
-        });
-        return { description: response.text.trim() };
-    } catch (error) {
-        console.error("Error generating description:", error);
-        return { description: "An error occurred while generating the description. Please try again." };
-    }
+    const response = await ai.models.generateContent({
+        model: textModel,
+        contents: prompt,
+    });
+    return { description: response.text.trim() };
 };
 
 export const suggestRarity = async ({ name, imageBase64, imageMimeType }) => {
     const prompt = `Based on the image of this mineral specimen, named "${name}", suggest a rarity level. Choose only one from this list: Common, Uncommon, Rare, Very Rare, Exceptional. Return only the chosen rarity level, with no other text.`;
 
-    try {
-        const imagePart = fileDataToPart(imageBase64, imageMimeType);
-        const textPart = { text: prompt };
-        const response = await ai.models.generateContent({
-            model: textModel,
-            contents: [{ parts: [imagePart, textPart] }],
-        });
-        const suggested = response.text.trim();
-        const validRarities = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Exceptional'];
-        if (validRarities.includes(suggested)) {
-            return { rarity: suggested };
-        }
-        console.warn(`AI returned invalid rarity: ${suggested}. Falling back to Common.`);
-        return { rarity: 'Common' };
-    } catch (error) {
-        console.error("Error suggesting rarity:", error);
-        return { rarity: 'Common' };
+    const imagePart = fileDataToPart(imageBase64, imageMimeType);
+    const textPart = { text: prompt };
+    const response = await ai.models.generateContent({
+        model: textModel,
+        contents: [{ parts: [imagePart, textPart] }],
+    });
+    const suggested = response.text.trim();
+    const validRarities = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Exceptional'];
+    if (validRarities.includes(suggested)) {
+        return { rarity: suggested };
     }
+    console.warn(`AI returned invalid rarity: ${suggested}. Falling back to Common.`);
+    return { rarity: 'Common' };
 };
 
 export const suggestType = async ({ name, imageBase64, imageMimeType }) => {
     const prompt = `Based on the image and name ('${name}') of this specimen, what is its general mineral classification or type (e.g., Quartz, Feldspar, Igneous Rock)? Return only the type name.`;
-    try {
-        const imagePart = fileDataToPart(imageBase64, imageMimeType);
-        const textPart = { text: prompt };
-        const response = await ai.models.generateContent({
-            model: textModel,
-            contents: [{ parts: [imagePart, textPart] }],
-        });
-        return { type: response.text.trim() };
-    } catch (error) {
-        console.error("Error suggesting type:", error);
-        return { type: '' };
-    }
+    const imagePart = fileDataToPart(imageBase64, imageMimeType);
+    const textPart = { text: prompt };
+    const response = await ai.models.generateContent({
+        model: textModel,
+        contents: [{ parts: [imagePart, textPart] }],
+    });
+    return { type: response.text.trim() };
 };
 
 
@@ -84,68 +69,55 @@ export const identifySpecimen = async ({ imageBase64, imageMimeType, history, qu
     
     const contents = [...(history || []), { role: 'user', parts: [imagePart, textPart] }];
 
-    try {
-        const response = await ai.models.generateContent({
-            model: textModel,
-            contents,
-            config: {
-                systemInstruction,
-                responseMimeType: 'application/json',
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        description: { type: Type.STRING, description: "A conversational description of the mineral, including key characteristics." },
-                        suggestedNames: { 
-                            type: Type.ARRAY, 
-                            items: { type: Type.STRING },
-                            description: "An array of 3-5 potential, specific names for the mineral specimen."
-                        }
-                    },
-                    required: ['description', 'suggestedNames']
-                }
+    const response = await ai.models.generateContent({
+        model: textModel,
+        contents,
+        config: {
+            systemInstruction,
+            responseMimeType: 'application/json',
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    description: { type: Type.STRING, description: "A conversational description of the mineral, including key characteristics." },
+                    suggestedNames: { 
+                        type: Type.ARRAY, 
+                        items: { type: Type.STRING },
+                        description: "An array of 3-5 potential, specific names for the mineral specimen."
+                    }
+                },
+                required: ['description', 'suggestedNames']
             }
-        });
+        }
+    });
 
-        const jsonResponse = JSON.parse(response.text);
-        return {
-            text: jsonResponse.description,
-            names: jsonResponse.suggestedNames
-        };
-    } catch (error) {
-        console.error("Error identifying specimen:", error);
-        return {
-            text: "I'm sorry, I encountered an error trying to identify the specimen. Please try again or rephrase your question.",
-            names: []
-        };
-    }
+    const jsonResponse = JSON.parse(response.text);
+    return {
+        text: jsonResponse.description,
+        names: jsonResponse.suggestedNames
+    };
 };
 
 async function processImageEdit({ imageBase64, imageMimeType, prompt }) {
-    try {
-        const imagePart = fileDataToPart(imageBase64, imageMimeType);
-        const textPart = { text: prompt };
+    const imagePart = fileDataToPart(imageBase64, imageMimeType);
+    const textPart = { text: prompt };
 
-        const response = await ai.models.generateContent({
-            model: imageEditModel,
-            contents: [{ parts: [imagePart, textPart] }],
-            config: {
-                responseModalities: [Modality.IMAGE],
-            },
-        });
+    const response = await ai.models.generateContent({
+        model: imageEditModel,
+        contents: [{ parts: [imagePart, textPart] }],
+        config: {
+            responseModalities: [Modality.IMAGE],
+        },
+    });
 
-        for (const part of response.candidates[0].content.parts) {
-            if (part.inlineData) {
-                const base64ImageBytes = part.inlineData.data;
-                const mimeType = part.inlineData.mimeType;
-                return { imageUrl: `data:${mimeType};base64,${base64ImageBytes}` };
-            }
+    for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+            const base64ImageBytes = part.inlineData.data;
+            const mimeType = part.inlineData.mimeType;
+            return { imageUrl: `data:${mimeType};base64,${base64ImageBytes}` };
         }
-        console.error("Image edit response did not contain an image part.");
-        return { imageUrl: null };
-    } catch (error) {
-        console.error("Error processing image edit:", error);
-        return { imageUrl: null };
     }
+    console.error("Image edit response did not contain an image part.");
+    return { imageUrl: null };
 }
 
 export const removeImageBackground = (body) => {
@@ -165,22 +137,17 @@ export const clarifyImage = (body) => {
 
 export const getDominantColor = async ({ imageBase64, imageMimeType }) => {
     const prompt = "Analyze this image and return the dominant color as a hex code. Return only the hex code and nothing else. e.g. #A7B2C4";
-    try {
-        const imagePart = fileDataToPart(imageBase64, imageMimeType);
-        const textPart = { text: prompt };
-        const response = await ai.models.generateContent({
-            model: textModel,
-            contents: [{ parts: [imagePart, textPart] }],
-        });
-        const color = response.text.trim();
-        if (/^#[0-9A-F]{6}$/i.test(color)) {
-            return { color };
-        }
-        return { color: null };
-    } catch (error) {
-        console.error("Error getting dominant color:", error);
-        return { color: null };
+    const imagePart = fileDataToPart(imageBase64, imageMimeType);
+    const textPart = { text: prompt };
+    const response = await ai.models.generateContent({
+        model: textModel,
+        contents: [{ parts: [imagePart, textPart] }],
+    });
+    const color = response.text.trim();
+    if (/^#[0-9A-F]{6}$/i.test(color)) {
+        return { color };
     }
+    return { color: null };
 };
 
 export const generateHomepageLayout = async ({ currentLayout, minerals, prompt }) => {
@@ -208,72 +175,66 @@ User Request: "${prompt}"
 Generate a new layout object and a summary. If the user request is ambiguous, provide a clarification question and options instead.
 `;
 
-    try {
-        const response = await ai.models.generateContent({
-            model: textModel,
-            contents: request,
-            config: {
-                systemInstruction,
-                responseMimeType: 'application/json',
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        layout: {
-                            type: Type.ARRAY,
-                            items: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    id: { type: Type.STRING },
-                                    type: { type: Type.STRING, description: "one of 'hero', 'carousel', 'grid-2', 'grid-3'" },
-                                    mineralIds: { type: Type.ARRAY, items: { type: Type.STRING } },
-                                    title: { type: Type.STRING, description: "Optional title for the component" },
-                                    animation: {
-                                        type: Type.OBJECT,
-                                        properties: {
-                                            type: { type: Type.STRING, description: "e.g., 'zoom-in' or 'none'" },
-                                            duration: { type: Type.STRING, description: "e.g., '20s'" }
-                                        }
-                                    },
-                                    speed: { type: Type.INTEGER, description: "For carousel, seconds per slide."}
-                                },
-                                required: ['id', 'type', 'mineralIds']
-                            }
-                        },
-                        summary: { type: Type.STRING, description: 'A brief summary of the changes made.' },
-                        clarification: {
+    const response = await ai.models.generateContent({
+        model: textModel,
+        contents: request,
+        config: {
+            systemInstruction,
+            responseMimeType: 'application/json',
+            responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    layout: {
+                        type: Type.ARRAY,
+                        items: {
                             type: Type.OBJECT,
                             properties: {
-                                question: { type: Type.STRING },
-                                options: {
-                                    type: Type.ARRAY,
-                                    items: {
-                                        type: Type.OBJECT,
-                                        properties: {
-                                            id: { type: Type.STRING },
-                                            name: { type: Type.STRING }
-                                        },
-                                        required: ['id', 'name']
+                                id: { type: Type.STRING },
+                                type: { type: Type.STRING, description: "one of 'hero', 'carousel', 'grid-2', 'grid-3'" },
+                                mineralIds: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                title: { type: Type.STRING, description: "Optional title for the component" },
+                                animation: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        type: { type: Type.STRING, description: "e.g., 'zoom-in' or 'none'" },
+                                        duration: { type: Type.STRING, description: "e.g., '20s'" }
                                     }
+                                },
+                                speed: { type: Type.INTEGER, description: "For carousel, seconds per slide."}
+                            },
+                            required: ['id', 'type', 'mineralIds']
+                        }
+                    },
+                    summary: { type: Type.STRING, description: 'A brief summary of the changes made.' },
+                    clarification: {
+                        type: Type.OBJECT,
+                        properties: {
+                            question: { type: Type.STRING },
+                            options: {
+                                type: Type.ARRAY,
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        id: { type: Type.STRING },
+                                        name: { type: Type.STRING }
+                                    },
+                                    required: ['id', 'name']
                                 }
                             }
                         }
                     }
                 }
             }
-        });
-        
-        const result = JSON.parse(response.text);
-        
-        if (result.layout && result.summary) {
-            return { layout: result.layout, summary: result.summary };
-        } else if (result.clarification) {
-            return { clarification: result.clarification };
         }
-        
-        return null;
-
-    } catch (error) {
-        console.error("Error generating homepage layout:", error);
-        return null;
+    });
+    
+    const result = JSON.parse(response.text);
+    
+    if (result.layout && result.summary) {
+        return { layout: result.layout, summary: result.summary };
+    } else if (result.clarification) {
+        return { clarification: result.clarification };
     }
+    
+    return null;
 };

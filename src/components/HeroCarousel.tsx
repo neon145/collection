@@ -53,7 +53,7 @@ const HeroCarousel: React.FC<HeroCarouselProps> = ({ component, minerals, onSele
                 {minerals.map((mineral, index) => (
                     <div
                         key={mineral.id}
-                        className={`carousel-slider carousel-slide ${index === currentIndex ? 'active' : ''}`}
+                        className={`carousel-slide ${index === currentIndex ? 'active' : ''}`}
                         style={{ transform: `translateX(${(index - currentIndex) * 100}%)` }}
                     >
                         <div className="w-full h-full cursor-pointer" onClick={() => onSelect(mineral)}>
