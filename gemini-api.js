@@ -35,7 +35,7 @@ export const suggestRarity = async ({ name, imageBase64, imageMimeType }) => {
     const textPart = { text: prompt };
     const response = await ai.models.generateContent({
         model: textModel,
-        contents: [{ parts: [imagePart, textPart] }],
+        contents: { parts: [imagePart, textPart] },
     });
     const suggested = response.text.trim();
     const validRarities = ['Common', 'Uncommon', 'Rare', 'Very Rare', 'Exceptional'];
@@ -52,7 +52,7 @@ export const suggestType = async ({ name, imageBase64, imageMimeType }) => {
     const textPart = { text: prompt };
     const response = await ai.models.generateContent({
         model: textModel,
-        contents: [{ parts: [imagePart, textPart] }],
+        contents: { parts: [imagePart, textPart] },
     });
     return { type: response.text.trim() };
 };
@@ -103,7 +103,7 @@ async function processImageEdit({ imageBase64, imageMimeType, prompt }) {
 
     const response = await ai.models.generateContent({
         model: imageEditModel,
-        contents: [{ parts: [imagePart, textPart] }],
+        contents: { parts: [imagePart, textPart] },
         config: {
             responseModalities: [Modality.IMAGE],
         },
@@ -141,7 +141,7 @@ export const getDominantColor = async ({ imageBase64, imageMimeType }) => {
     const textPart = { text: prompt };
     const response = await ai.models.generateContent({
         model: textModel,
-        contents: [{ parts: [imagePart, textPart] }],
+        contents: { parts: [imagePart, textPart] },
     });
     const color = response.text.trim();
     if (/^#[0-9A-F]{6}$/i.test(color)) {
